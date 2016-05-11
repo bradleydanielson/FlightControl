@@ -24,50 +24,6 @@
     4 = LAND
 */
 
-/* Control Parameters Default Definitions */
-// PITCH
-#define KPP 0.2
-#define KDP 0.01
-#define KIP 0.001
-//ROLL
-#define KPR 0.2
-#define KDR 0.01
-#define KIR 0.001
-//YAW
-#define KPY 0.1
-#define KDY 0.001
-#define KIY 0.001
-//EAST
-#define KPE 1.0
-#define KDE 0.01
-#define KIE 0.001
-//NORTH
-#define KPN 1.0
-#define KDN 0.01
-#define KIN 0.001
-//UP
-#define KPZ 1.0
-#define KDZ 0.001
-#define KIZ 0.01
-/* End K params*/
-
-#define TRUE 1 
-#define FALSE 0
-
-// FLIGHT STATES
-#define CHARGE 0
-#define TAKEOFF 1
-#define HOVER 2
-#define TRANSLATE 3
-#define LAND 4
-
-/* These Definitions Pertain to Flight Plan */
-#define NumberOfModes 5
-#define HOVERALTITUDE 2  // METERS
-#define EASTTARGET 9   // METERS
-#define NORTHTARGET 10  // METERS
-#define LandingIndex 3 
-/* End Flight Plan Definitions */ /*******************************************/
 
 
 /* VARIABLES */
@@ -78,7 +34,7 @@ double KpZ = KPZ, KiZ = KIZ, KdZ = KDZ ;
 /* FLIGHT VARIABLES */
 int flightMode[NumberOfModes] =  {CHARGE, TAKEOFF, HOVER,  LAND,  CHARGE} ;
 xyz flightCoors[NumberOfModes] ;// Number of Modes must match length of flightMode array ^
-int flightModeIndex ;
+int flightModeIndex = 0 ;
 xyzf initialPosition, curr_locf ;
 xyz curr_loc, XYZ_SP, IP;
 /* END FLIGHT VARIABLES */

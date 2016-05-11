@@ -51,7 +51,7 @@
 
 /* These Definitions Pertain to Flight Plan */
 #define NumberOfModes 5
-#define HOVERALTITUDE 2  // METERS
+#define HOVERALTITUDE 1.5  // METERS
 #define EASTTARGET 9   // METERS
 #define NORTHTARGET 10  // METERS
 #define LandingIndex 3 
