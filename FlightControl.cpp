@@ -7,8 +7,8 @@
 
 /* Definitions*/
 #define maxCarrotHorizDefault 0.5 // Max Magnitude of Horizontal Heading Vector
-#define maxCarrotVertDefaultUP 0.5
-#define maxCarrotVertDefaultDOWN 0.03 ;
+#define maxCarrotVertDefaultUP 0.05
+#define maxCarrotVertDefaultDOWN 0.03 
 #define TRUE 1 
 #define FALSE 0
 //#define PI 3.14159265358979323846  /* pi */
@@ -29,7 +29,7 @@
 /* VARIABLES */
 double KiP = KIP, KiR = KIR, KpP = KPP, KpR = KPR, KdP = KDP, KdR = KDR, KiY = KIY, KdY = KDY, KpY = KPY;
 double KpN = KPN, KiN = KIN, KdN = KDN, KpE = KPE, KiE = KIE, KdE = KDE;
-double KpZ = KPZ, KiZ = KIZ, KdZ = KDZ ;
+double KpZ = KPZ, KiZ = KIZ, KdZ = KDZ, KpdZ = KPDZ, KidZ = KIDZ, KddZ = KDDZ ;
 
 /* FLIGHT VARIABLES */
 int flightMode[NumberOfModes] =  {CHARGE, TAKEOFF, HOVER,  LAND,  CHARGE} ;
@@ -37,15 +37,18 @@ xyz flightCoors[NumberOfModes] ;// Number of Modes must match length of flightMo
 int flightModeIndex = 0 ;
 xyzf initialPosition, curr_locf ;
 xyz curr_loc, XYZ_SP, IP;
+	double maxCarrotHoriz = maxCarrotHorizDefault ;
+	double maxCarrotVertUP  = maxCarrotVertDefaultUP ;
+	double maxCarrotVertDOWN  = maxCarrotVertDefaultDOWN ;
 /* END FLIGHT VARIABLES */
 
 
 /* Constructor */
 FlightControl::FlightControl() {
     /* Initial Values Declared in Constructor */
-	double maxCarrotHoriz = maxCarrotHorizDefault ;
-	double maxCarrotVerticalUP  = maxCarrotVertDefaultUP ;
-	double maxCarrotVerticalDOWN  = maxCarrotVertDefaultDOWN ;
+// 	double maxCarrotHoriz = maxCarrotHorizDefault ;
+// 	double maxCarrotVerticalUP  = maxCarrotVertDefaultUP ;
+// 	double maxCarrotVerticalDOWN  = maxCarrotVertDefaultDOWN ;
 	//flightMode = flightMode[flightModeIndex] ;
 }
 /* Deconstructor */
@@ -69,17 +72,17 @@ xyz FlightControl::computeXYZSetpoints(xyz fdest, xyz curr_loc, int flightMode, 
     double carrotZ ;
     switch(flightMode){
         case CHARGE :
-            // CHARGE LOGIC **************************
             break ;
         case TAKEOFF :
-            KiZ = 0.0 ; // ************************************
+            KiZ = 0.0; KpZ = 0.0; KpdZ = KPDZ; // ************************************
             carrotZ = computeCarrotVectorZ(fdest, curr_loc, maxCarrotVertUP, flightMode); //***************
-            xyzSP = {fdest.x, fdest.y,carrotZ};
-            if (carrotZ > fdest.z - curr_loc.z){flightModeIndex++;}
+            xyzSP = rotateVector(fdest,curr_loc,yaw) ;
+            xyzSP.z = carrotZ ;
+//            if (carrotZ > fdest.z){flightModeIndex++;}
+			if(abs(fdest.z-curr_loc.z) <= 0.1){flightModeIndex++;}
             break ;
         case TRANSLATE :
-            KiN = 0.0; KiE = 0.0; KiZ = KIZ ;// ********************************
-            // TRANSLATE LOGIC *********************** xyz dest = computeCarrotvectorXY(); xyz dest = rotateVector(yaw)
+            KiN = 0.0; KiE = 0.0; KiZ = KIZ ;
             carrotVecXY = computeCarrotVectorXY(fdest, curr_loc, IP, maxCarrotHoriz) ;
             xyzSP = rotateVector(carrotVecXY, curr_loc, yaw)  ;
             xyzSP.z = fdest.z ;
@@ -88,19 +91,16 @@ xyz FlightControl::computeXYZSetpoints(xyz fdest, xyz curr_loc, int flightMode, 
             if (computeMagnitude(carrotVecXY, TRUE) > computeMagnitude(temp, TRUE)) {flightModeIndex++;}
             break ;
         case LAND :
-            KiZ = 0.0 ; KiN = KIN ; KiE = KIE ; // ************************************
-            // LANDING LOGIC ****************************
+            KpZ = 0.0 ; KiN = KIN ; KiE = KIE ; KpdZ = KPDZ ;// ************************************
             carrotZ = computeCarrotVectorZ(fdest,curr_loc, maxCarrotVertDOWN,flightMode); //***************
-            xyzSP.x = fdest.x ; //{fdest.x, fdest.y,carrotZ};
-            xyzSP.y = fdest.y ;
-            xyzSP.z = carrotZ ;
+            xyzSP = rotateVector(fdest,curr_loc,yaw) ;
+            xyzSP.z = curr_loc.z - carrotZ ;
             if (abs(curr_loc.z-IP.z) < 0.04 ){flightModeIndex++;}
             break ;
         case HOVER :
-            KiZ = KIZ ; KiN = KIN ; KiE = KIE ;
-            xyzSP.x = flightCoors[flightModeIndex].x ;
-            xyzSP.y = flightCoors[flightModeIndex].y ;
-            xyzSP.z = flightCoors[flightModeIndex].z ;
+            KpZ = KPZ; KiZ = KIZ ; KiN = KIN ; KiE = KIE ; KpdZ = 0.0 ;
+            xyzSP = rotateVector(fdest, curr_loc, yaw) ;
+            xyzSP.z = fdest.z ;
             break ;
     }
     return xyzSP ;
@@ -109,14 +109,22 @@ xyz FlightControl::computeXYZSetpoints(xyz fdest, xyz curr_loc, int flightMode, 
 double FlightControl::computeCarrotVectorZ(xyz fdest, xyz curr_loc, double maxCarrotVert, int flightMode){
     double dist, zSP ;
     dist = fdest.z - curr_loc.z ;
-    if (abs(dist) < maxCarrotVert )
-        zSP = fdest.z ;
-    else {
-        if (flightMode == TAKEOFF)
-            zSP = curr_loc.z + maxCarrotVertUP ;
-        else if (flightMode == LAND)
-            zSP = curr_loc.z - maxCarrotVertDOWN ;
-    }
+    if (flightMode == TAKEOFF) {
+    	if (abs(dist) <= maxCarrotVertDefaultUP ) {
+    		zSP = fdest.z ;
+//    		zSP = 1.0 ;
+		}
+    	else {
+    		zSP = curr_loc.z + maxCarrotVertDefaultUP ;
+//    		zSP = 1.5;
+		}
+	}
+	else {
+		if ( abs(dist) <= maxCarrotVertDefaultDOWN )
+    		zSP = fdest.z ;
+    	else
+    		zSP = curr_loc.z - maxCarrotVertDefaultDOWN ;
+	}
     return zSP ;
 }
 
@@ -160,12 +168,12 @@ xyz FlightControl::computeCarrotVectorXY(xyz dest, xyz curr_loc, xyz initial_loc
 xyz FlightControl::rotateVector(xyz Target, xyz Actual, double yaw) {
     xyz Error, ErrorT ;
     // Find 2d Error Vector
-    Error.x = Target.x - Actual.x ; 
-    Error.y = Target.y - Actual.y ;
-    //Rotate Error Vector by Yaw
-    ErrorT.x = -(Error.y*sin(deg2rad*yaw) + Error.x*cos(deg2rad*yaw)) ;
-    ErrorT.y = -(Error.y*cos(deg2rad*yaw) - Error.x*sin(deg2rad*yaw)) ;
-    return ErrorT ; // Esetpoint = ErrorT.y, NSetpoint = ErrorT.x
+    Error.x = Target.x - Actual.x ; // EAST ERROR
+    Error.y = Target.y - Actual.y ; // NORTH ERROR
+    //Rotate Error Vector by Negative Yaw
+    ErrorT.x = Error.x*cos(-deg2rad*yaw) - Error.y*sin(-deg2rad*yaw) ; // Ex*cos(-yaw) - Ey*cos(-yaw) Rotated East Comp.
+    ErrorT.y = Error.y*sin(-deg2rad*yaw) + Error.x*cos(-deg2rad*yaw) ; // Ey*sin(-yaw) + Ex*cos(-yaw) Rotated North Comp.
+    return ErrorT ; // Esetpoint = ErrorT.x, NSetpoint = ErrorT.y
 }
 /* rotateAxes() fixes the boundary problem as yaw actual cross the zero to 360 degreee border in both directions
 */
@@ -182,7 +190,7 @@ double FlightControl::rotateAxes(double yawSP, double yaw) {
 /* computeGroundSpeed() computes the magnitude of (x,y) velocity vector */
 double FlightControl::computeGroundSpeed(xyz curr_loc, xyz last_loc, double lastTime) {
     double dVx, dVy, dt ;
-    dt = (millis() - lastTime)*1000.0 ;
+    dt = (millis() - lastTime)/1000.0 ;
     dVx = abs(curr_loc.x - last_loc.x)/dt ;
     dVy = abs(curr_loc.y - last_loc.y)/dt ;
     return sqrt(pow(dVx,2)+pow(dVy,2)) ;
@@ -191,8 +199,8 @@ double FlightControl::computeGroundSpeed(xyz curr_loc, xyz last_loc, double last
 /* computeVerticalSpeed() computes the magnitude of z velocity vector */
 double FlightControl::computeVerticalSpeed(xyz curr_loc, xyz last_loc, double lastTime) {
     double dVz, dt ;
-    dt = (millis() - lastTime)*1000.0 ;
-    dVz = abs(curr_loc.z - last_loc.z)/dt ;
+    dt = (millis() - lastTime)/1000.0 ;
+    dVz = (curr_loc.z - last_loc.z)/dt ;
     return dVz ;
 }
 

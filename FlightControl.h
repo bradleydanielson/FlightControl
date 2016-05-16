@@ -14,17 +14,17 @@
 
 /* Control Parameters Default Definitions */
 // PITCH
-#define KPP 0.2
-#define KDP 0.01
-#define KIP 0.001
+#define KPP 0.23
+#define KDP 0.016
+#define KIP 0.0033
 //ROLL
-#define KPR 0.2
-#define KDR 0.01
-#define KIR 0.001
+#define KPR 0.23
+#define KDR 0.016
+#define KIR 0.0033
 //YAW
-#define KPY 0.1
-#define KDY 0.001
-#define KIY 0.001
+#define KPY 0.3
+#define KDY 0.01
+#define KIY 0.0031
 //EAST
 #define KPE 1.0
 #define KDE 0.01
@@ -33,10 +33,14 @@
 #define KPN 1.0
 #define KDN 0.01
 #define KIN 0.001
-//UP
+//UP POSITION
 #define KPZ 1.0
-#define KDZ 0.001
-#define KIZ 0.01
+#define KDZ 0.0
+#define KIZ 0.000
+//UP RATE
+#define KPDZ 2.0
+#define KDDZ 0.005
+#define KIDZ 0.001
 /* End K params*/
 
 #define TRUE 1 
@@ -55,6 +59,8 @@
 #define EASTTARGET 9   // METERS
 #define NORTHTARGET 10  // METERS
 #define LandingIndex 3 
+#define MaxTakeOffSpeed 0.05 // METERS/SECOND
+#define MaxLandingSpeed 0.01 // METERS/SECOND
 /* End Flight Plan Definitions */ /*******************************************/
 
 struct xyz {
@@ -67,13 +73,13 @@ struct xyzf {
     double x ;
     double y ;
     double z ;
-    int fix ;
+    int f ;
 } ;
 
 /* VARIABLES */
 extern double KiP, KiR, KpP, KpR, KdP, KdR, KiY, KdY, KpY;
 extern double KpN, KiN, KdN, KpE, KiE, KdE;
-extern double KpZ, KiZ, KdZ ;
+extern double KpZ, KiZ, KdZ, KpdZ, KidZ, KddZ ;
 
 /* FLIGHT VARIABLES */
 extern int flightMode[NumberOfModes] ;
